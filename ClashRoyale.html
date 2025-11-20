@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clash Royale Style Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .game-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Header */
+        .game-header {
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .player-info {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .crown {
+            font-size: 24px;
+            margin-right: 10px;
+        }
+
+        .elixir-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .elixir-container {
+            width: 200px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            overflow: hidden;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .elixir-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #8e44ad, #e74c3c);
+            border-radius: 15px;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        /* Game Arena */
+        .arena {
+            flex: 1;
+            position: relative;
+            background: linear-gradient(180deg, #87CEEB 0%, #98D8C8 50%, #87CEEB 100%);
+            overflow: hidden;
+            perspective: 1000px;
+        }
+
+        /* River */
+        .river {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 60px;
+            background: linear-gradient(180deg, #4a90e2 0%, #357abd 50%, #4a90e2 100%);
+            border-top: 3px solid rgba(255, 255, 255, 0.3);
+            border-bottom: 3px solid rgba(255, 255, 255, 0.3);
+            z-index: 1;
+        }
+
+        .river::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 20px,
+                rgba(255, 255, 255, 0.1) 20px,
+                rgba(255, 255, 255, 0.1) 40px
+            );
+        }
+
+        /* Bridges */
+        .bridge {
+            position: absolute;
+            width: 200px;
+            height: 40px;
+            background: #8B4513;
+            border: 2px solid #654321;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 2;
+        }
+
+        .bridge-left {
+            left: 20%;
+        }
+
+        .bridge-right {
+            right: 20%;
+        }
+
+        /* Towers */
+        .tower {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 4px solid #2c3e50;
+            background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            z-index: 10;
+            transition: all 0.3s;
+        }
+
+        .tower::before {
+            content: '';
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .tower.player1 {
+            bottom: 20px;
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        }
+
+        .tower.player1.left {
+            left: 150px;
+        }
+
+        .tower.player1.right {
+            right: 150px;
+        }
+
+        .tower.player1.king {
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        }
+
+        .tower.player2 {
+            top: 20px;
+            background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+        }
+
+        .tower.player2.left {
+            left: 150px;
+        }
+
+        .tower.player2.right {
+            right: 150px;
+        }
+
+        .tower.player2.king {
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        }
+
+        .tower-health {
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .tower.damaged {
+            animation: shake 0.3s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        /* Units */
+        .unit {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            transition: transform 0.1s;
+            z-index: 5;
+        }
+
+        .unit.player1 {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        }
+
+        .unit.player2 {
+            background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+        }
+
+        .unit.attacking {
+            animation: attack-pulse 0.5s;
+        }
+
+        @keyframes attack-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .unit-health-bar {
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 4px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .unit-health-fill {
+            height: 100%;
+            background: #2ecc71;
+            transition: width 0.2s;
+        }
+
+        /* Card Deck */
+        .card-deck {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .card {
+            width: 80px;
+            height: 100px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+            border-color: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.5);
+        }
+
+        .card.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            filter: grayscale(100%);
+        }
+
+        .card.epic {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .card.rare {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .card.legendary {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            animation: legendary-glow 2s infinite;
+        }
+
+        @keyframes legendary-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(250, 112, 154, 0.5); }
+            50% { box-shadow: 0 0 30px rgba(250, 112, 154, 0.8); }
+        }
+
+        .card-icon {
+            font-size: 32px;
+        }
+
+        .card-cost {
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        /* Game Over Modal */
+        .game-over {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .game-over.show {
+            display: flex;
+        }
+
+        .game-over-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            color: white;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .game-over-content h2 {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        .game-over-content button {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+
+        .game-over-content button:hover {
+            transform: scale(1.1);
+        }
+
+        /* Particle Effects */
+        .particle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #ffd700;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        /* Battle Log */
+        .battle-log {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 12px;
+            max-width: 200px;
+            max-height: 150px;
+            overflow-y: auto;
+            z-index: 50;
+        }
+
+        .battle-log-item {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 3px solid #3498db;
+            padding-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <div class="player-info">
+                <span class="crown">👑</span>
+                <span>Player 1</span>
+            </div>
+            <div class="elixir-bar">
+                <span>⚡</span>
+                <div class="elixir-container">
+                    <div class="elixir-fill" id="elixir-fill">5/10</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="arena" id="arena">
+            <div class="river"></div>
+            <div class="bridge bridge-left"></div>
+            <div class="bridge bridge-right"></div>
+            
+            <!-- Player 2 Towers (Top) -->
+            <div class="tower player2 left" id="tower-p2-left" data-health="1000" data-max="1000">
+                <div class="tower-health">1000</div>
+            </div>
+            <div class="tower player2 king" id="tower-p2-king" data-health="2000" data-max="2000">
+                <div class="tower-health">2000</div>
+            </div>
+            <div class="tower player2 right" id="tower-p2-right" data-health="1000" data-max="1000">
+                <div class="tower-health">1000</div>
+            </div>
+
+            <!-- Player 1 Towers (Bottom) -->
+            <div class="tower player1 left" id="tower-p1-left" data-health="1000" data-max="1000">
+                <div class="tower-health">1000</div>
+            </div>
+            <div class="tower player1 king" id="tower-p1-king" data-health="2000" data-max="2000">
+                <div class="tower-health">2000</div>
+            </div>
+            <div class="tower player1 right" id="tower-p1-right" data-health="1000" data-max="1000">
+                <div class="tower-health">1000</div>
+        </div>
+
+        <div class="battle-log" id="battle-log">
+            <div class="battle-log-item">Battle Started!</div>
+        </div>
+    </div>
+
+    <div class="card-deck" id="card-deck">
+        <!-- Cards will be generated here -->
+    </div>
+
+    <div class="game-over" id="game-over">
+        <div class="game-over-content">
+            <h2 id="game-over-title">Victory! 🎉</h2>
+            <p id="game-over-message">You destroyed all enemy towers!</p>
+            <button onclick="restartGame()">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        const gameState = {
+            elixir: 5,
+            maxElixir: 10,
+            player1Towers: {
+                left: { health: 1000, max: 1000, element: null },
+                king: { health: 2000, max: 2000, element: null },
+                right: { health: 1000, max: 1000, element: null }
+            },
+            player2Towers: {
+                left: { health: 1000, max: 1000, element: null },
+                king: { health: 2000, max: 2000, element: null },
+                right: { health: 1000, max: 1000, element: null }
+            },
+            units: [],
+            gameActive: true,
+            selectedCard: null
+        };
+
+        // Card Definitions
+        const cards = [
+            { id: 1, name: 'Knight', icon: '⚔️', cost: 3, rarity: 'common', unitType: 'melee', health: 100, damage: 50, speed: 1, splashRadius: 0, towerOnly: false },
+            { id: 2, name: 'Archer', icon: '🏹', cost: 3, rarity: 'common', unitType: 'ranged', health: 80, damage: 40, speed: 1.2, splashRadius: 0, towerOnly: false },
+            { id: 3, name: 'Giant', icon: '👹', cost: 5, rarity: 'rare', unitType: 'tank', health: 300, damage: 30, speed: 0.5, splashRadius: 0, towerOnly: false },
+            { id: 4, name: 'Wizard', icon: '🧙', cost: 5, rarity: 'epic', unitType: 'ranged', health: 70, damage: 80, speed: 1, splashRadius: 60, towerOnly: false },
+            { id: 5, name: 'Dragon', icon: '🐉', cost: 7, rarity: 'legendary', unitType: 'ranged', health: 200, damage: 100, speed: 1.5, splashRadius: 80, towerOnly: false },
+            { id: 6, name: 'Goblin', icon: '👺', cost: 2, rarity: 'common', unitType: 'melee', health: 50, damage: 30, speed: 1.5, splashRadius: 0, towerOnly: false },
+            { id: 7, name: 'Mage', icon: '🔮', cost: 4, rarity: 'rare', unitType: 'ranged', health: 90, damage: 60, speed: 1, splashRadius: 50, towerOnly: false },
+            { id: 8, name: 'Barbarian', icon: '🗡️', cost: 4, rarity: 'common', unitType: 'melee', health: 120, damage: 45, speed: 1.1, splashRadius: 0, towerOnly: false },
+            { id: 9, name: 'Rider', icon: '🏇', cost: 4, rarity: 'rare', unitType: 'melee', health: 150, damage: 60, speed: 1.8, splashRadius: 0, towerOnly: true }
+        ];
+
+        // Initialize Game
+        function initGame() {
+            initializeTowers();
+            createCardDeck();
+            startElixirRegen();
+            startGameLoop();
+            addBattleLog('Game initialized! Choose a card to deploy units.');
+            addBattleLog('Destroy left and right towers to attack the king tower!');
+            
+            // Update tower positions on resize
+            window.addEventListener('resize', () => {
+                setTimeout(initializeTowers, 100);
+            });
+        }
+
+        function initializeTowers() {
+            const arena = document.getElementById('arena');
+            const arenaWidth = arena.offsetWidth;
+            const arenaHeight = arena.offsetHeight;
+            
+            ['left', 'king', 'right'].forEach(type => {
+                const p1Tower = gameState.player1Towers[type];
+                const p2Tower = gameState.player2Towers[type];
+                
+                p1Tower.element = document.getElementById(`tower-p1-${type}`);
+                p2Tower.element = document.getElementById(`tower-p2-${type}`);
+                
+                // Set fixed tower positions
+                if (type === 'left') {
+                    p1Tower.x = arenaWidth * 0.2;
+                    p1Tower.y = arenaHeight * 0.85;
+                    p2Tower.x = arenaWidth * 0.2;
+                    p2Tower.y = arenaHeight * 0.15;
+                } else if (type === 'right') {
+                    p1Tower.x = arenaWidth * 0.8;
+                    p1Tower.y = arenaHeight * 0.85;
+                    p2Tower.x = arenaWidth * 0.8;
+                    p2Tower.y = arenaHeight * 0.15;
+                } else { // king
+                    p1Tower.x = arenaWidth * 0.5;
+                    p1Tower.y = arenaHeight * 0.85;
+                    p2Tower.x = arenaWidth * 0.5;
+                    p2Tower.y = arenaHeight * 0.15;
+                }
+            });
+        }
+
+        function createCardDeck() {
+            const deck = document.getElementById('card-deck');
+            deck.innerHTML = '';
+            
+            // Select 4 random cards
+            const selectedCards = [];
+            const shuffled = [...cards].sort(() => Math.random() - 0.5);
+            for (let i = 0; i < 4; i++) {
+                selectedCards.push(shuffled[i]);
+            }
+
+            selectedCards.forEach(card => {
+                const cardElement = document.createElement('div');
+                cardElement.className = `card ${card.rarity}`;
+                cardElement.innerHTML = `
+                    <div class="card-icon">${card.icon}</div>
+                    <div class="card-cost">${card.cost}</div>
+                `;
+                cardElement.onclick = () => selectCard(card, cardElement);
+                deck.appendChild(cardElement);
+            });
+        }
+
+        function selectCard(card, cardElement) {
+            if (!gameState.gameActive) return;
+            if (gameState.elixir < card.cost) {
+                addBattleLog(`Not enough elixir! Need ${card.cost}, have ${gameState.elixir}`);
+                return;
+            }
+
+            gameState.selectedCard = card;
+            gameState.elixir -= card.cost;
+            updateElixirBar();
+            
+            // Highlight card
+            document.querySelectorAll('.card').forEach(c => c.style.borderColor = 'rgba(255, 255, 255, 0.3)');
+            cardElement.style.borderColor = '#ffd700';
+            
+            // Enable arena click to deploy
+            const arena = document.getElementById('arena');
+            arena.style.cursor = 'crosshair';
+            arena.onclick = (e) => deployUnit(e, card);
+        }
+
+        function deployUnit(event, card) {
+            if (!gameState.gameActive) return;
+            
+            const arena = document.getElementById('arena');
+            const rect = arena.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            
+            // Only deploy on player's side (bottom half)
+            if (y > rect.height / 2) {
+                createUnit(x, y, card, 'player1');
+                addBattleLog(`Deployed ${card.name} for ${card.cost} elixir`);
+                
+                // AI responds by placing one unit
+                setTimeout(() => {
+                    spawnAIUnit();
+                }, 1000); // Small delay to make it feel more natural
+            } else {
+                addBattleLog('Can only deploy on your side!');
+            }
+            
+            // Reset selection
+            gameState.selectedCard = null;
+            arena.style.cursor = 'default';
+            arena.onclick = null;
+            document.querySelectorAll('.card').forEach(c => c.style.borderColor = 'rgba(255, 255, 255, 0.3)');
+        }
+
+        function createUnit(x, y, card, player) {
+            const unit = document.createElement('div');
+            unit.className = `unit ${player}`;
+            unit.style.left = x + 'px';
+            unit.style.top = y + 'px';
+            unit.innerHTML = `
+                <div class="card-icon">${card.icon}</div>
+                <div class="unit-health-bar">
+                    <div class="unit-health-fill" style="width: 100%"></div>
+                </div>
+            `;
+            
+            const unitData = {
+                element: unit,
+                x: x,
+                y: y,
+                player: player,
+                health: card.health,
+                maxHealth: card.health,
+                damage: card.damage,
+                speed: card.speed,
+                target: null,
+                targetType: null, // 'unit' or 'tower'
+                type: card.unitType,
+                attackCooldown: 0,
+                attackRange: card.unitType === 'ranged' ? 100 : 50,
+                splashRadius: card.splashRadius || 0,
+                towerOnly: card.towerOnly || false
+            };
+            
+            document.getElementById('arena').appendChild(unit);
+            gameState.units.push(unitData);
+            
+            // Create particles
+            createParticles(x, y, '#ffd700');
+        }
+
+        function startElixirRegen() {
+            setInterval(() => {
+                if (gameState.gameActive && gameState.elixir < gameState.maxElixir) {
+                    gameState.elixir = Math.min(gameState.maxElixir, gameState.elixir + 1);
+                    updateElixirBar();
+                }
+            }, 2800); // Gain 1 elixir every 2.8 seconds
+        }
+
+        function updateElixirBar() {
+            const fill = document.getElementById('elixir-fill');
+            const percentage = (gameState.elixir / gameState.maxElixir) * 100;
+            fill.style.width = percentage + '%';
+            fill.textContent = `${Math.floor(gameState.elixir)}/${gameState.maxElixir}`;
+            
+            // Update card availability
+            document.querySelectorAll('.card').forEach((card, index) => {
+                const cardData = cards.find(c => c.icon === card.querySelector('.card-icon').textContent);
+                if (cardData) {
+                    if (gameState.elixir < cardData.cost) {
+                        card.classList.add('disabled');
+                    } else {
+                        card.classList.remove('disabled');
+                    }
+                }
+            });
+        }
+
+        function startGameLoop() {
+            setInterval(() => {
+                if (!gameState.gameActive) return;
+                
+                updateUnits();
+                updateTowerAttacks();
+                updateKingTowerProtection();
+                checkGameOver();
+            }, 50);
+        }
+
+        function updateTowerAttacks() {
+            // Track tower attack cooldowns
+            if (!gameState.towerAttackCooldowns) {
+                gameState.towerAttackCooldowns = {
+                    p1Left: 0, p1King: 0, p1Right: 0,
+                    p2Left: 0, p2King: 0, p2Right: 0
+                };
+            }
+            
+            // Player 1 towers attack
+            attackTowerUnits('player1', 'left', gameState.player1Towers.left, 'p1Left');
+            attackTowerUnits('player1', 'king', gameState.player1Towers.king, 'p1King');
+            attackTowerUnits('player1', 'right', gameState.player1Towers.right, 'p1Right');
+            
+            // Player 2 towers attack
+            attackTowerUnits('player2', 'left', gameState.player2Towers.left, 'p2Left');
+            attackTowerUnits('player2', 'king', gameState.player2Towers.king, 'p2King');
+            attackTowerUnits('player2', 'right', gameState.player2Towers.right, 'p2Right');
+        }
+
+        function attackTowerUnits(player, towerType, tower, cooldownKey) {
+            if (tower.health <= 0 || !tower.x) return;
+            
+            const enemyUnits = gameState.units.filter(u => 
+                u.player !== player && 
+                u.health > 0
+            );
+            
+            // Find nearest enemy unit within range
+            let nearestUnit = null;
+            let nearestDistance = 200; // Tower attack range
+            
+            enemyUnits.forEach(unit => {
+                const distance = getDistance(tower.x, tower.y, unit.x, unit.y);
+                if (distance < nearestDistance) {
+                    nearestDistance = distance;
+                    nearestUnit = unit;
+                }
+            });
+            
+            // Attack if unit is in range and cooldown is ready
+            if (nearestUnit && gameState.towerAttackCooldowns[cooldownKey] <= 0) {
+                const towerDamage = 40; // Tower damage per shot
+                nearestUnit.health -= towerDamage;
+                updateUnitHealth(nearestUnit);
+                
+                // Visual effect
+                tower.element.classList.add('damaged');
+                setTimeout(() => tower.element.classList.remove('damaged'), 200);
+                createParticles(nearestUnit.x, nearestUnit.y, '#3498db');
+                
+                // Reset cooldown (1.5 seconds)
+                gameState.towerAttackCooldowns[cooldownKey] = 75;
+                
+                if (nearestUnit.health <= 0) {
+                    createParticles(nearestUnit.x, nearestUnit.y, '#ff0000');
+                    addBattleLog(`Tower defeated ${player === 'player1' ? 'enemy' : 'your'} unit!`);
+                }
+            } else if (gameState.towerAttackCooldowns[cooldownKey] > 0) {
+                gameState.towerAttackCooldowns[cooldownKey]--;
+            }
+        }
+
+        function updateKingTowerProtection() {
+            // Check player 1 king tower protection
+            const p1SideTowersDestroyed = gameState.player1Towers.left.health <= 0 && gameState.player1Towers.right.health <= 0;
+            const p1KingTower = gameState.player1Towers.king.element;
+            if (p1KingTower) {
+                if (!p1SideTowersDestroyed && gameState.player1Towers.king.health > 0) {
+                    p1KingTower.style.border = '4px solid #2ecc71';
+                    p1KingTower.style.boxShadow = '0 10px 30px rgba(46, 204, 113, 0.5)';
+                } else {
+                    p1KingTower.style.border = '4px solid #2c3e50';
+                    p1KingTower.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.5)';
+                }
+            }
+
+            // Check player 2 king tower protection
+            const p2SideTowersDestroyed = gameState.player2Towers.left.health <= 0 && gameState.player2Towers.right.health <= 0;
+            const p2KingTower = gameState.player2Towers.king.element;
+            if (p2KingTower) {
+                if (!p2SideTowersDestroyed && gameState.player2Towers.king.health > 0) {
+                    p2KingTower.style.border = '4px solid #2ecc71';
+                    p2KingTower.style.boxShadow = '0 10px 30px rgba(46, 204, 113, 0.5)';
+                } else {
+                    p2KingTower.style.border = '4px solid #2c3e50';
+                    p2KingTower.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.5)';
+                }
+            }
+        }
+
+        function updateUnits() {
+            gameState.units.forEach((unit, index) => {
+                if (unit.health <= 0) {
+                    unit.element.remove();
+                    gameState.units.splice(index, 1);
+                    return;
+                }
+
+                // Find target (nearest troop or tower)
+                if (!unit.target || 
+                    (unit.targetType === 'unit' && unit.target.health <= 0) ||
+                    (unit.targetType === 'tower' && unit.target.tower.health <= 0)) {
+                    const target = findNearestTarget(unit);
+                    unit.target = target.target;
+                    unit.targetType = target.type;
+                }
+
+                if (unit.target) {
+                    let targetX, targetY;
+                    
+                    if (unit.targetType === 'unit') {
+                        targetX = unit.target.x;
+                        targetY = unit.target.y;
+                    } else {
+                        // Tower target
+                        targetX = unit.target.x;
+                        targetY = unit.target.y;
+                    }
+                    
+                    const distance = getDistance(unit.x, unit.y, targetX, targetY);
+                    
+                    if (distance <= unit.attackRange) {
+                        // Attack
+                        if (unit.attackCooldown <= 0) {
+                            if (unit.targetType === 'unit') {
+                                attackTarget(unit, unit.target);
+                            } else {
+                                attackTower(unit, unit.target.tower, unit.target.towerType);
+                            }
+                            unit.attackCooldown = 60; // 1 second cooldown
+                        } else {
+                            unit.attackCooldown--;
+                        }
+                    } else {
+                        // Move towards target
+                        moveTowardsPosition(unit, targetX, targetY);
+                    }
+                } else {
+                    // Move towards enemy towers
+                    moveTowardsEnemyTowers(unit);
+                }
+            });
+        }
+
+        function findNearestTarget(unit) {
+            const targets = [];
+            
+            // If unit is not tower-only, find nearest enemy unit
+            if (!unit.towerOnly) {
+                const enemyUnits = gameState.units.filter(u => u.player !== unit.player && u.health > 0);
+                enemyUnits.forEach(enemy => {
+                    const distance = getDistance(unit.x, unit.y, enemy.x, enemy.y);
+                    targets.push({ target: enemy, type: 'unit', distance: distance });
+                });
+            }
+            
+            // Find nearest enemy tower
+            const towers = unit.player === 'player1' ? gameState.player2Towers : gameState.player1Towers;
+            const sideTowersDestroyed = towers.left.health <= 0 && towers.right.health <= 0;
+            
+            ['left', 'right', 'king'].forEach(towerType => {
+                const tower = towers[towerType];
+                
+                // Skip king tower if side towers still exist
+                if (towerType === 'king' && !sideTowersDestroyed) {
+                    return;
+                }
+                
+                if (tower.health > 0 && tower.x !== undefined) {
+                    const distance = getDistance(unit.x, unit.y, tower.x, tower.y);
+                    targets.push({ 
+                        target: { tower: tower, towerType: towerType, x: tower.x, y: tower.y }, 
+                        type: 'tower', 
+                        distance: distance 
+                    });
+                }
+            });
+            
+            // Find nearest target
+            if (targets.length === 0) {
+                return { target: null, type: null };
+            }
+            
+            const nearest = targets.reduce((closest, current) => {
+                return current.distance < closest.distance ? current : closest;
+            });
+            
+            return nearest;
+        }
+
+        function moveTowardsPosition(unit, targetX, targetY) {
+            const dx = targetX - unit.x;
+            const dy = targetY - unit.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance > 0) {
+                unit.x += (dx / distance) * unit.speed * 2;
+                unit.y += (dy / distance) * unit.speed * 2;
+                unit.element.style.left = unit.x + 'px';
+                unit.element.style.top = unit.y + 'px';
+            }
+        }
+
+        function moveTowardsEnemyTowers(unit) {
+            const towers = unit.player === 'player1' ? gameState.player2Towers : gameState.player1Towers;
+            
+            // Check if side towers are destroyed
+            const sideTowersDestroyed = towers.left.health <= 0 && towers.right.health <= 0;
+            
+            let targetX, targetY;
+            
+            // Prioritize side towers, then king tower
+            if (!sideTowersDestroyed) {
+                // Find closest side tower
+                const leftDist = towers.left.health > 0 ? getDistance(unit.x, unit.y, towers.left.x, towers.left.y) : Infinity;
+                const rightDist = towers.right.health > 0 ? getDistance(unit.x, unit.y, towers.right.x, towers.right.y) : Infinity;
+                
+                if (leftDist < rightDist && towers.left.health > 0) {
+                    targetX = towers.left.x;
+                    targetY = towers.left.y;
+                } else if (towers.right.health > 0) {
+                    targetX = towers.right.x;
+                    targetY = towers.right.y;
+                } else {
+                    // Both side towers destroyed, move to king
+                    targetX = towers.king.x;
+                    targetY = towers.king.y;
+                }
+            } else {
+                // Side towers destroyed, move to king tower
+                targetX = towers.king.x;
+                targetY = towers.king.y;
+            }
+            
+            const dx = targetX - unit.x;
+            const dy = targetY - unit.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance > 0) {
+                unit.x += (dx / distance) * unit.speed * 2;
+                unit.y += (dy / distance) * unit.speed * 2;
+                unit.element.style.left = unit.x + 'px';
+                unit.element.style.top = unit.y + 'px';
+            }
+            
+            // Check if reached tower
+            checkTowerCollision(unit);
+        }
+
+        function checkTowerCollision(unit) {
+            const towers = unit.player === 'player1' ? gameState.player2Towers : gameState.player1Towers;
+            
+            // Check if side towers are destroyed (for king tower protection)
+            const sideTowersDestroyed = towers.left.health <= 0 && towers.right.health <= 0;
+            
+            // Priority: attack side towers first, then king tower if sides are destroyed
+            const towerOrder = ['left', 'right', 'king'];
+            
+            for (const type of towerOrder) {
+                const tower = towers[type];
+                
+                // Skip king tower if side towers still exist
+                if (type === 'king' && !sideTowersDestroyed) {
+                    continue;
+                }
+                
+                if (tower.health > 0 && tower.element && tower.x !== undefined) {
+                    const distance = getDistance(unit.x, unit.y, tower.x, tower.y);
+                    if (distance < 60) {
+                        // Attack tower
+                        if (unit.attackCooldown <= 0) {
+                            attackTower(unit, tower, type);
+                            unit.attackCooldown = 60;
+                        } else {
+                            unit.attackCooldown--;
+                        }
+                        return; // Found a target, stop searching
+                    }
+                }
+            }
+        }
+
+        function attackTarget(unit, target) {
+            // Apply damage to primary target
+            target.health -= unit.damage;
+            updateUnitHealth(target);
+            
+            unit.element.classList.add('attacking');
+            setTimeout(() => unit.element.classList.remove('attacking'), 500);
+            
+            // Apply splash damage if unit has splash radius
+            if (unit.splashRadius > 0) {
+                const splashDamage = unit.damage * 0.5; // 50% damage in splash area
+                const enemyUnits = gameState.units.filter(u => 
+                    u.player !== unit.player && 
+                    u.health > 0 && 
+                    u !== target
+                );
+                
+                enemyUnits.forEach(enemy => {
+                    const distance = getDistance(unit.x, unit.y, enemy.x, enemy.y);
+                    if (distance <= unit.splashRadius) {
+                        enemy.health -= splashDamage;
+                        updateUnitHealth(enemy);
+                        createParticles(enemy.x, enemy.y, '#ffa500');
+                        
+                        if (enemy.health <= 0) {
+                            createParticles(enemy.x, enemy.y, '#ff0000');
+                            addBattleLog(`${unit.player === 'player1' ? 'Your' : 'Enemy'} splash damage defeated unit!`);
+                        }
+                    }
+                });
+                
+                // Visual splash effect
+                createParticles(target.x, target.y, '#ffa500');
+            }
+            
+            if (target.health <= 0) {
+                createParticles(target.x, target.y, '#ff0000');
+                addBattleLog(`${unit.player === 'player1' ? 'Your' : 'Enemy'} unit defeated!`);
+            }
+        }
+
+        function attackTower(unit, tower, towerType) {
+            tower.health -= unit.damage;
+            if (tower.health < 0) tower.health = 0;
+            
+            updateTowerHealth(tower, towerType);
+            
+            tower.element.classList.add('damaged');
+            setTimeout(() => tower.element.classList.remove('damaged'), 300);
+            
+            // Apply splash damage to nearby units if applicable
+            if (unit.splashRadius > 0) {
+                const splashDamage = unit.damage * 0.5;
+                const enemyUnits = gameState.units.filter(u => 
+                    u.player !== unit.player && 
+                    u.health > 0
+                );
+                
+                enemyUnits.forEach(enemy => {
+                    const distance = getDistance(unit.x, unit.y, enemy.x, enemy.y);
+                    if (distance <= unit.splashRadius) {
+                        enemy.health -= splashDamage;
+                        updateUnitHealth(enemy);
+                        createParticles(enemy.x, enemy.y, '#ffa500');
+                        
+                        if (enemy.health <= 0) {
+                            createParticles(enemy.x, enemy.y, '#ff0000');
+                        }
+                    }
+                });
+            }
+            
+            createParticles(tower.x, tower.y, '#ff0000');
+            
+            if (tower.health <= 0) {
+                tower.element.style.opacity = '0.3';
+                addBattleLog(`Tower destroyed!`);
+                createParticles(tower.x, tower.y, '#ff0000');
+            }
+        }
+
+        function updateUnitHealth(unit) {
+            const percentage = (unit.health / unit.maxHealth) * 100;
+            const healthFill = unit.element.querySelector('.unit-health-fill');
+            if (healthFill) {
+                healthFill.style.width = percentage + '%';
+                if (percentage < 30) {
+                    healthFill.style.background = '#e74c3c';
+                } else if (percentage < 60) {
+                    healthFill.style.background = '#f39c12';
+                }
+            }
+        }
+
+        function updateTowerHealth(tower, type) {
+            const player = tower === gameState.player1Towers[type] ? 'p1' : 'p2';
+            const healthElement = tower.element.querySelector('.tower-health');
+            if (healthElement) {
+                healthElement.textContent = Math.floor(tower.health);
+            }
+        }
+
+        function getDistance(x1, y1, x2, y2) {
+            return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+        }
+
+        function createParticles(x, y, color) {
+            for (let i = 0; i < 10; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = x + 'px';
+                particle.style.top = y + 'px';
+                particle.style.background = color;
+                particle.style.left = x + Math.random() * 40 - 20 + 'px';
+                particle.style.top = y + Math.random() * 40 - 20 + 'px';
+                
+                document.getElementById('arena').appendChild(particle);
+                
+                setTimeout(() => {
+                    particle.style.opacity = '0';
+                    particle.style.transform = `translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px) scale(0)`;
+                    particle.style.transition = 'all 1s';
+                    setTimeout(() => particle.remove(), 1000);
+                }, 10);
+            }
+        }
+
+        function addBattleLog(message) {
+            const log = document.getElementById('battle-log');
+            const item = document.createElement('div');
+            item.className = 'battle-log-item';
+            item.textContent = message;
+            log.insertBefore(item, log.firstChild);
+            
+            // Keep only last 10 items
+            while (log.children.length > 10) {
+                log.removeChild(log.lastChild);
+            }
+        }
+
+        function checkGameOver() {
+            // Check if player 2 (AI) has no towers
+            const p2TowersAlive = Object.values(gameState.player2Towers).some(t => t.health > 0);
+            if (!p2TowersAlive) {
+                endGame(true);
+                return;
+            }
+            
+            // Check if player 1 has no towers
+            const p1TowersAlive = Object.values(gameState.player1Towers).some(t => t.health > 0);
+            if (!p1TowersAlive) {
+                endGame(false);
+                return;
+            }
+        }
+
+        function spawnAIUnit() {
+            const arena = document.getElementById('arena');
+            const randomCard = cards[Math.floor(Math.random() * cards.length)];
+            const x = Math.random() * arena.offsetWidth;
+            const y = arena.offsetHeight * 0.2; // Top side
+            createUnit(x, y, randomCard, 'player2');
+            addBattleLog(`Enemy deployed ${randomCard.name}!`);
+        }
+
+        function endGame(playerWon) {
+            gameState.gameActive = false;
+            const modal = document.getElementById('game-over');
+            const title = document.getElementById('game-over-title');
+            const message = document.getElementById('game-over-message');
+            
+            if (playerWon) {
+                title.textContent = 'Victory! 🎉';
+                message.textContent = 'You destroyed all enemy towers!';
+            } else {
+                title.textContent = 'Defeat! 💔';
+                message.textContent = 'All your towers have been destroyed!';
+            }
+            
+            modal.classList.add('show');
+        }
+
+        function restartGame() {
+            location.reload();
+        }
+
+        // Initialize game on load
+        window.onload = initGame;
+    </script>
+</body>
+</html>
+
