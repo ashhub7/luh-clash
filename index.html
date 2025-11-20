@@ -39,6 +39,35 @@
             z-index: 100;
         }
 
+        .game-header-top {
+            position: absolute;
+            top: 0;
+            width: 100%;
+        }
+
+        .timer {
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .timer.overtime {
+            color: #ff6b6b;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .elixir-multiplier {
+            font-size: 14px;
+            color: #ffd700;
+            margin-left: 10px;
+        }
+
         .player-info {
             display: flex;
             gap: 20px;
@@ -437,16 +466,32 @@
 </head>
 <body>
     <div class="game-container">
+        <div class="game-header game-header-top">
+            <div class="player-info">
+                <span class="crown">👑</span>
+                <span>Player 2</span>
+            </div>
+            <div style="flex: 1;"></div>
+            <div class="elixir-bar">
+                <span>⚡</span>
+                <div class="elixir-container">
+                    <div class="elixir-fill" id="elixir-fill-p2">4/10</div>
+                </div>
+                <span class="elixir-multiplier" id="elixir-multiplier-p2"></span>
+            </div>
+        </div>
         <div class="game-header">
             <div class="player-info">
                 <span class="crown">👑</span>
                 <span>Player 1</span>
             </div>
+            <div class="timer" id="game-timer">3:00</div>
             <div class="elixir-bar">
                 <span>⚡</span>
                 <div class="elixir-container">
                     <div class="elixir-fill" id="elixir-fill">5/10</div>
                 </div>
+                <span class="elixir-multiplier" id="elixir-multiplier"></span>
             </div>
         </div>
 
@@ -499,6 +544,12 @@
         const gameState = {
             elixir: 5,
             maxElixir: 10,
+            elixirP2: 4,
+            maxElixirP2: 10,
+            gameTime: 180, // 3 minutes in seconds
+            overtimeTime: 0, // 0 means not in overtime
+            elixirMultiplier: 1,
+            elixirMultiplierP2: 1,
             player1Towers: {
                 left: { health: 1000, max: 1000, element: null },
                 king: { health: 2000, max: 2000, element: null },
@@ -511,7 +562,8 @@
             },
             units: [],
             gameActive: true,
-            selectedCard: null
+            selectedCard: null,
+            inOvertime: false
         };
 
         // Card Definitions
@@ -520,11 +572,18 @@
             { id: 2, name: 'Archer', icon: '🏹', cost: 3, rarity: 'common', unitType: 'ranged', health: 80, damage: 40, speed: 1.2, splashRadius: 0, towerOnly: false },
             { id: 3, name: 'Giant', icon: '👹', cost: 5, rarity: 'rare', unitType: 'tank', health: 300, damage: 30, speed: 0.5, splashRadius: 0, towerOnly: false },
             { id: 4, name: 'Wizard', icon: '🧙', cost: 5, rarity: 'epic', unitType: 'ranged', health: 70, damage: 80, speed: 1, splashRadius: 60, towerOnly: false },
-            { id: 5, name: 'Dragon', icon: '🐉', cost: 7, rarity: 'legendary', unitType: 'ranged', health: 200, damage: 100, speed: 1.5, splashRadius: 80, towerOnly: false },
+            { id: 5, name: 'Dragon', icon: '🐉', cost: 7, rarity: 'legendary', unitType: 'ranged', health: 200, damage: 60, speed: 1.5, splashRadius: 80, towerOnly: false },
             { id: 6, name: 'Goblin', icon: '👺', cost: 2, rarity: 'common', unitType: 'melee', health: 50, damage: 30, speed: 1.5, splashRadius: 0, towerOnly: false },
             { id: 7, name: 'Mage', icon: '🔮', cost: 4, rarity: 'rare', unitType: 'ranged', health: 90, damage: 60, speed: 1, splashRadius: 50, towerOnly: false },
             { id: 8, name: 'Barbarian', icon: '🗡️', cost: 4, rarity: 'common', unitType: 'melee', health: 120, damage: 45, speed: 1.1, splashRadius: 0, towerOnly: false },
-            { id: 9, name: 'Rider', icon: '🏇', cost: 4, rarity: 'rare', unitType: 'melee', health: 150, damage: 60, speed: 1.8, splashRadius: 0, towerOnly: true }
+            { id: 9, name: 'Rider', icon: '🏇', cost: 4, rarity: 'rare', unitType: 'melee', health: 150, damage: 60, speed: 1.8, splashRadius: 0, towerOnly: true },
+            { id: 10, name: 'Mega Knight', icon: '🛡️', cost: 7, rarity: 'legendary', unitType: 'melee', health: 250, damage: 80, speed: 0.8, splashRadius: 100, towerOnly: false, hasJump: true, jumpDamage: 120 },
+            { id: 11, name: 'Pekka', icon: '⚡', cost: 7, rarity: 'epic', unitType: 'melee', health: 280, damage: 100, speed: 0.6, splashRadius: 0, towerOnly: false },
+            { id: 12, name: 'Valkyrie', icon: '🔨', cost: 4, rarity: 'rare', unitType: 'melee', health: 140, damage: 55, speed: 1, splashRadius: 70, towerOnly: false },
+            { id: 13, name: 'Bomber', icon: '💣', cost: 3, rarity: 'common', unitType: 'ranged', health: 60, damage: 70, speed: 0.9, splashRadius: 90, towerOnly: false },
+            { id: 14, name: 'Skeleton', icon: '💀', cost: 1, rarity: 'common', unitType: 'melee', health: 30, damage: 20, speed: 1.3, splashRadius: 0, towerOnly: false },
+            { id: 15, name: 'Ice Wizard', icon: '❄️', cost: 3, rarity: 'epic', unitType: 'ranged', health: 85, damage: 45, speed: 1, splashRadius: 60, towerOnly: false },
+            { id: 16, name: 'Prince', icon: '🐴', cost: 5, rarity: 'epic', unitType: 'melee', health: 180, damage: 90, speed: 1.5, splashRadius: 0, towerOnly: false }
         ];
 
         // Initialize Game
@@ -532,9 +591,15 @@
             initializeTowers();
             createCardDeck();
             startElixirRegen();
+            startElixirMultiplierRegen();
+            startGameTimer();
             startGameLoop();
+            startAISpawning();
+            updateElixirBarP2();
             addBattleLog('Game initialized! Choose a card to deploy units.');
             addBattleLog('Destroy left and right towers to attack the king tower!');
+            addBattleLog('Game lasts 3 minutes. At 1 minute: 2x Elixir!');
+            addBattleLog('If tied at 3 minutes, overtime begins!');
             
             // Update tower positions on resize
             window.addEventListener('resize', () => {
@@ -578,10 +643,10 @@
             const deck = document.getElementById('card-deck');
             deck.innerHTML = '';
             
-            // Select 4 random cards
+            // Select 8 random cards
             const selectedCards = [];
             const shuffled = [...cards].sort(() => Math.random() - 0.5);
-            for (let i = 0; i < 4; i++) {
+            for (let i = 0; i < 8; i++) {
                 selectedCards.push(shuffled[i]);
             }
 
@@ -631,10 +696,10 @@
                 createUnit(x, y, card, 'player1');
                 addBattleLog(`Deployed ${card.name} for ${card.cost} elixir`);
                 
-                // AI responds by placing one unit
+                // AI periodically spawns units
                 setTimeout(() => {
                     spawnAIUnit();
-                }, 1000); // Small delay to make it feel more natural
+                }, 2000 + Math.random() * 3000); // Random delay between 2-5 seconds
             } else {
                 addBattleLog('Can only deploy on your side!');
             }
@@ -673,23 +738,273 @@
                 attackCooldown: 0,
                 attackRange: card.unitType === 'ranged' ? 100 : 50,
                 splashRadius: card.splashRadius || 0,
-                towerOnly: card.towerOnly || false
+                towerOnly: card.towerOnly || false,
+                hasJump: card.hasJump || false,
+                jumpDamage: card.jumpDamage || 0,
+                hasJumped: false
             };
             
             document.getElementById('arena').appendChild(unit);
             gameState.units.push(unitData);
             
+            // Mega Knight jump ability
+            if (card.hasJump && !unitData.hasJumped) {
+                performMegaKnightJump(unitData);
+            }
+            
             // Create particles
             createParticles(x, y, '#ffd700');
         }
 
+        function performMegaKnightJump(unit) {
+            if (unit.hasJumped) return;
+            
+            // Find nearest enemy unit or tower
+            const enemies = gameState.units.filter(u => u.player !== unit.player && u.health > 0);
+            const towers = unit.player === 'player1' ? gameState.player2Towers : gameState.player1Towers;
+            
+            let nearestTarget = null;
+            let nearestDistance = Infinity;
+            
+            // Check enemy units
+            enemies.forEach(enemy => {
+                const distance = getDistance(unit.x, unit.y, enemy.x, enemy.y);
+                if (distance < nearestDistance && distance < 200) {
+                    nearestDistance = distance;
+                    nearestTarget = { type: 'unit', target: enemy, x: enemy.x, y: enemy.y };
+                }
+            });
+            
+            // Check towers
+            ['left', 'right', 'king'].forEach(towerType => {
+                const tower = towers[towerType];
+                if (tower.health > 0 && tower.x !== undefined) {
+                    const distance = getDistance(unit.x, unit.y, tower.x, tower.y);
+                    if (distance < nearestDistance && distance < 200) {
+                        nearestDistance = distance;
+                        nearestTarget = { type: 'tower', target: tower, x: tower.x, y: tower.y, towerType: towerType };
+                    }
+                }
+            });
+            
+            if (nearestTarget && nearestDistance < 200) {
+                // Jump to target
+                unit.x = nearestTarget.x;
+                unit.y = nearestTarget.y;
+                unit.element.style.left = unit.x + 'px';
+                unit.element.style.top = unit.y + 'px';
+                unit.element.style.transform = 'scale(1.3)';
+                setTimeout(() => {
+                    unit.element.style.transform = 'scale(1)';
+                }, 300);
+                
+                // Deal jump damage
+                if (nearestTarget.type === 'unit') {
+                    nearestTarget.target.health -= unit.jumpDamage;
+                    updateUnitHealth(nearestTarget.target);
+                    createParticles(nearestTarget.x, nearestTarget.y, '#ff6b6b');
+                    
+                    // Splash damage to nearby units
+                    const nearbyUnits = gameState.units.filter(u => 
+                        u.player !== unit.player && 
+                        u.health > 0 && 
+                        u !== nearestTarget.target
+                    );
+                    nearbyUnits.forEach(enemy => {
+                        const distance = getDistance(unit.x, unit.y, enemy.x, enemy.y);
+                        if (distance <= unit.splashRadius) {
+                            enemy.health -= unit.jumpDamage * 0.5;
+                            updateUnitHealth(enemy);
+                            createParticles(enemy.x, enemy.y, '#ff6b6b');
+                        }
+                    });
+                } else {
+                    nearestTarget.target.health -= unit.jumpDamage;
+                    updateTowerHealth(nearestTarget.target, nearestTarget.towerType);
+                    createParticles(nearestTarget.x, nearestTarget.y, '#ff6b6b');
+                }
+                
+                unit.hasJumped = true;
+                addBattleLog('Mega Knight jumps and deals damage!');
+            }
+        }
+
         function startElixirRegen() {
             setInterval(() => {
-                if (gameState.gameActive && gameState.elixir < gameState.maxElixir) {
-                    gameState.elixir = Math.min(gameState.maxElixir, gameState.elixir + 1);
-                    updateElixirBar();
+                if (gameState.gameActive) {
+                    // Player 1 elixir regen
+                    if (gameState.elixir < gameState.maxElixir) {
+                        gameState.elixir = Math.min(gameState.maxElixir, gameState.elixir + 1);
+                        updateElixirBar();
+                    }
+                    // Player 2 elixir regen
+                    if (gameState.elixirP2 < gameState.maxElixirP2) {
+                        gameState.elixirP2 = Math.min(gameState.maxElixirP2, gameState.elixirP2 + 1);
+                        updateElixirBarP2();
+                    }
                 }
-            }, 2800); // Gain 1 elixir every 2.8 seconds
+            }, 2800); // Base regen time
+        }
+
+        // Separate faster elixir regen based on multiplier
+        function startElixirMultiplierRegen() {
+            setInterval(() => {
+                if (gameState.gameActive && gameState.elixirMultiplier > 1) {
+                    // Player 1 gets extra elixir based on multiplier
+                    if (gameState.elixir < gameState.maxElixir) {
+                        gameState.elixir = Math.min(gameState.maxElixir, gameState.elixir + (gameState.elixirMultiplier - 1));
+                        updateElixirBar();
+                    }
+                }
+                if (gameState.gameActive && gameState.elixirMultiplierP2 > 1) {
+                    // Player 2 gets extra elixir based on multiplier
+                    if (gameState.elixirP2 < gameState.maxElixirP2) {
+                        gameState.elixirP2 = Math.min(gameState.maxElixirP2, gameState.elixirP2 + (gameState.elixirMultiplierP2 - 1));
+                        updateElixirBarP2();
+                    }
+                }
+            }, 2800); // Same interval, but adds extra elixir
+        }
+
+        function startGameTimer() {
+            const timerInterval = setInterval(() => {
+                if (!gameState.gameActive) {
+                    clearInterval(timerInterval);
+                    return;
+                }
+
+                if (gameState.inOvertime) {
+                    gameState.overtimeTime--;
+                    updateTimer();
+                    
+                    // Check for 3x elixir at 1 minute in OT
+                    if (gameState.overtimeTime === 60) {
+                        gameState.elixirMultiplier = 3;
+                        gameState.elixirMultiplierP2 = 3;
+                        updateElixirMultiplier();
+                        addBattleLog('3x Elixir in Overtime!');
+                    }
+                    
+                    // End overtime after 2 minutes
+                    if (gameState.overtimeTime <= 0) {
+                        endGameByTime();
+                        clearInterval(timerInterval);
+                    }
+                } else {
+                    gameState.gameTime--;
+                    updateTimer();
+                    
+                    // Check for 2x elixir at 1 minute
+                    if (gameState.gameTime === 60) {
+                        gameState.elixirMultiplier = 2;
+                        gameState.elixirMultiplierP2 = 2;
+                        updateElixirMultiplier();
+                        addBattleLog('2x Elixir!');
+                    }
+                    
+                    // Check for game end at 3 minutes
+                    if (gameState.gameTime <= 0) {
+                        checkGameEndByTime();
+                        if (!gameState.inOvertime) {
+                            clearInterval(timerInterval);
+                        }
+                    }
+                }
+            }, 1000);
+        }
+
+        function updateTimer() {
+            const timerElement = document.getElementById('game-timer');
+            if (gameState.inOvertime) {
+                const minutes = Math.floor(gameState.overtimeTime / 60);
+                const seconds = gameState.overtimeTime % 60;
+                timerElement.textContent = `OT ${minutes}:${seconds.toString().padStart(2, '0')}`;
+                timerElement.classList.add('overtime');
+            } else {
+                const minutes = Math.floor(gameState.gameTime / 60);
+                const seconds = gameState.gameTime % 60;
+                timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                timerElement.classList.remove('overtime');
+            }
+        }
+
+        function updateElixirMultiplier() {
+            const multiplierElement = document.getElementById('elixir-multiplier');
+            const multiplierElementP2 = document.getElementById('elixir-multiplier-p2');
+            if (gameState.elixirMultiplier > 1) {
+                multiplierElement.textContent = `${gameState.elixirMultiplier}x`;
+            } else {
+                multiplierElement.textContent = '';
+            }
+            if (gameState.elixirMultiplierP2 > 1) {
+                multiplierElementP2.textContent = `${gameState.elixirMultiplierP2}x`;
+            } else {
+                multiplierElementP2.textContent = '';
+            }
+        }
+
+        function checkGameEndByTime() {
+            const p1TowersDestroyed = countDestroyedTowers(gameState.player1Towers);
+            const p2TowersDestroyed = countDestroyedTowers(gameState.player2Towers);
+            
+            if (p1TowersDestroyed === 0 && p2TowersDestroyed === 0) {
+                // No towers destroyed, go to overtime
+                gameState.inOvertime = true;
+                gameState.overtimeTime = 120; // 2 minutes
+                addBattleLog('Overtime! 2 minutes remaining!');
+                startGameTimer(); // Restart timer for overtime
+            } else {
+                // Someone has more towers destroyed
+                if (p1TowersDestroyed < p2TowersDestroyed) {
+                    endGame(true, 'You destroyed more towers!');
+                } else if (p2TowersDestroyed < p1TowersDestroyed) {
+                    endGame(false, 'Enemy destroyed more towers!');
+                } else {
+                    // Tie - go to overtime
+                    gameState.inOvertime = true;
+                    gameState.overtimeTime = 120;
+                    addBattleLog('Tie! Overtime! 2 minutes remaining!');
+                    startGameTimer();
+                }
+            }
+        }
+
+        function endGameByTime() {
+            const p1TowersDestroyed = countDestroyedTowers(gameState.player1Towers);
+            const p2TowersDestroyed = countDestroyedTowers(gameState.player2Towers);
+            
+            if (p1TowersDestroyed < p2TowersDestroyed) {
+                endGame(true, 'You destroyed more towers!');
+            } else if (p2TowersDestroyed < p1TowersDestroyed) {
+                endGame(false, 'Enemy destroyed more towers!');
+            } else {
+                // Still a tie - check if any towers remain
+                const p1TowersAlive = Object.values(gameState.player1Towers).some(t => t.health > 0);
+                const p2TowersAlive = Object.values(gameState.player2Towers).some(t => t.health > 0);
+                
+                if (p2TowersAlive && !p1TowersAlive) {
+                    endGame(false, 'Time up! Enemy has more towers!');
+                } else if (p1TowersAlive && !p2TowersAlive) {
+                    endGame(true, 'Time up! You have more towers!');
+                } else {
+                    endGame(false, 'Time up! Draw!');
+                }
+            }
+        }
+
+        function countDestroyedTowers(towers) {
+            let count = 0;
+            if (towers.left.health <= 0) count++;
+            if (towers.right.health <= 0) count++;
+            if (towers.king.health <= 0) count++;
+            return count;
+        }
+
+        function updateElixirBarP2() {
+            const fill = document.getElementById('elixir-fill-p2');
+            const percentage = (gameState.elixirP2 / gameState.maxElixirP2) * 100;
+            fill.style.width = percentage + '%';
+            fill.textContent = `${Math.floor(gameState.elixirP2)}/${gameState.maxElixirP2}`;
         }
 
         function updateElixirBar() {
@@ -1162,15 +1477,28 @@
         }
 
         function spawnAIUnit() {
+            if (!gameState.gameActive) return;
+            
+            // AI only spawns if it has enough elixir
+            const availableCards = cards.filter(c => gameState.elixirP2 >= c.cost);
+            if (availableCards.length === 0) return;
+            
             const arena = document.getElementById('arena');
-            const randomCard = cards[Math.floor(Math.random() * cards.length)];
+            const randomCard = availableCards[Math.floor(Math.random() * availableCards.length)];
+            
+            // Check if AI has enough elixir
+            if (gameState.elixirP2 < randomCard.cost) return;
+            
+            gameState.elixirP2 -= randomCard.cost;
+            updateElixirBarP2();
+            
             const x = Math.random() * arena.offsetWidth;
             const y = arena.offsetHeight * 0.2; // Top side
             createUnit(x, y, randomCard, 'player2');
             addBattleLog(`Enemy deployed ${randomCard.name}!`);
         }
 
-        function endGame(playerWon) {
+        function endGame(playerWon, customMessage = null) {
             gameState.gameActive = false;
             const modal = document.getElementById('game-over');
             const title = document.getElementById('game-over-title');
@@ -1178,13 +1506,22 @@
             
             if (playerWon) {
                 title.textContent = 'Victory! 🎉';
-                message.textContent = 'You destroyed all enemy towers!';
+                message.textContent = customMessage || 'You destroyed all enemy towers!';
             } else {
                 title.textContent = 'Defeat! 💔';
-                message.textContent = 'All your towers have been destroyed!';
+                message.textContent = customMessage || 'All your towers have been destroyed!';
             }
             
             modal.classList.add('show');
+        }
+
+        function startAISpawning() {
+            // AI spawns units periodically
+            setInterval(() => {
+                if (gameState.gameActive && Math.random() > 0.3) { // 70% chance to spawn
+                    spawnAIUnit();
+                }
+            }, 3000 + Math.random() * 2000); // Every 3-5 seconds
         }
 
         function restartGame() {
@@ -1196,3 +1533,4 @@
     </script>
 </body>
 </html>
+
