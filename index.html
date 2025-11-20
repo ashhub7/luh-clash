@@ -405,6 +405,7 @@
             text-align: center;
             color: white;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            max-width: 500px;
         }
 
         .game-over-content h2 {
@@ -427,6 +428,89 @@
 
         .game-over-content button:hover {
             transform: scale(1.1);
+        }
+
+        /* Update Notes Modal */
+        .update-notes {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .update-notes.show {
+            display: flex;
+        }
+
+        .update-notes-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px;
+            border-radius: 20px;
+            color: white;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .update-notes-content h2 {
+            font-size: 36px;
+            margin-bottom: 20px;
+            text-align: center;
+            color: #ffd700;
+        }
+
+        .update-notes-content h3 {
+            font-size: 24px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #ffd700;
+        }
+
+        .update-notes-content ul {
+            list-style: none;
+            padding: 0;
+            text-align: left;
+        }
+
+        .update-notes-content li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .update-notes-content li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #2ecc71;
+            font-weight: bold;
+        }
+
+        .update-notes-content button {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+            width: 100%;
+            transition: transform 0.2s;
+        }
+
+        .update-notes-content button:hover {
+            transform: scale(1.05);
         }
 
         /* Particle Effects */
@@ -539,6 +623,25 @@
         </div>
     </div>
 
+    <div class="update-notes" id="update-notes">
+        <div class="update-notes-content">
+            <h2>📢 Update Notes</h2>
+            <h3>Latest Changes:</h3>
+            <ul>
+                <li>⚡ Troops now attack 2x faster for more intense battles!</li>
+                <li>🎴 Deck size increased from 4 to 8 cards</li>
+                <li>⚔️ Both players now have separate elixir systems</li>
+                <li>⏱️ 3-minute game timer with 2x elixir at 1 minute</li>
+                <li>🔥 Overtime system: 2 minutes with 3x elixir at 1 minute</li>
+                <li>🛡️ New card: Mega Knight - Jumps and deals splash damage!</li>
+                <li>🎯 New cards added: Pekka, Valkyrie, Bomber, Skeleton, Ice Wizard, Prince</li>
+                <li>🐉 Dragon damage nerfed for better balance</li>
+                <li>🏆 Win condition: Most towers destroyed at 3 minutes wins!</li>
+            </ul>
+            <button onclick="closeUpdateNotes()">Got it!</button>
+        </div>
+    </div>
+
     <script>
         // Game State
         const gameState = {
@@ -601,10 +704,29 @@
             addBattleLog('Game lasts 3 minutes. At 1 minute: 2x Elixir!');
             addBattleLog('If tied at 3 minutes, overtime begins!');
             
+            // Show update notes on first load
+            showUpdateNotes();
+            
             // Update tower positions on resize
             window.addEventListener('resize', () => {
                 setTimeout(initializeTowers, 100);
             });
+        }
+
+        function showUpdateNotes() {
+            // Check if update notes have been shown before
+            const updateNotesShown = localStorage.getItem('clashRoyaleUpdateNotesShown');
+            if (!updateNotesShown) {
+                const updateNotesModal = document.getElementById('update-notes');
+                updateNotesModal.classList.add('show');
+                // Mark as shown
+                localStorage.setItem('clashRoyaleUpdateNotesShown', 'true');
+            }
+        }
+
+        function closeUpdateNotes() {
+            const updateNotesModal = document.getElementById('update-notes');
+            updateNotesModal.classList.remove('show');
         }
 
         function initializeTowers() {
@@ -1167,7 +1289,7 @@
                             } else {
                                 attackTower(unit, unit.target.tower, unit.target.towerType);
                             }
-                            unit.attackCooldown = 60; // 1 second cooldown
+                            unit.attackCooldown = 30; // 0.5 second cooldown (faster attacks)
                         } else {
                             unit.attackCooldown--;
                         }
@@ -1310,7 +1432,7 @@
                         // Attack tower
                         if (unit.attackCooldown <= 0) {
                             attackTower(unit, tower, type);
-                            unit.attackCooldown = 60;
+                            unit.attackCooldown = 30; // 0.5 second cooldown (faster attacks)
                         } else {
                             unit.attackCooldown--;
                         }
